@@ -5,10 +5,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 2.12"
-    }
   }
   # Optional: uncomment to store state in S3 (recommended for team use)
   # backend "s3" {
@@ -73,7 +69,7 @@ module "eks" {
   version = "20.8.4"
 
   cluster_name    = var.cluster_name
-  cluster_version = "1.30"
+  cluster_version = "1.31"  # Step 1: 1.30→1.31. After this apply succeeds, change to "1.32" and apply again.
 
   cluster_endpoint_public_access = true  # Allow kubectl from your laptop
   # Security note: restrict to your IP in production:
@@ -99,40 +95,9 @@ module "eks" {
   enable_cluster_creator_admin_permissions = true
 }
 
-# ─── Helm Provider Configuration ──────────────────────────────────────────────
-provider "helm" {
-  kubernetes {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      command     = "aws"
-      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-    }
-  }
-}
-
-# ─── RabbitMQ Helm Release ────────────────────────────────────────────────────
-resource "helm_release" "rabbitmq" {
-  name       = "rabbitmq"
-  repository = "https://charts.bitnami.com/bitnami"
-  chart      = "rabbitmq"
-  namespace  = "medlogix"
-  create_namespace = true
-
-  set {
-    name  = "auth.username"
-    value = "guest"
-  }
-
-  set {
-    name  = "auth.password"
-    value = "guest"
-  }
-
-  # For cost/resource efficiency in this sample project
-  set {
-    name  = "replicaCount"
-    value = "1"
-  }
-}
+# ─── Note ─────────────────────────────────────────────────────────────────────
+# RabbitMQ is deployed separately via kubectl using the official image:
+#   kubectl apply -f ../k8s/rabbitmq-deployment.yaml -n medlogix
+#   kubectl apply -f ../k8s/rabbitmq-service.yaml    -n medlogix
+# The Bitnami Helm chart was removed because its Docker Hub images have been
+# pulled from registry-1.docker.io and cause ImagePullBackOff on all versions.

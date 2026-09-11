@@ -1,19 +1,13 @@
 # ─── GitHub Actions OIDC provider ─────────────────────────────────────────────
 # Allows GitHub Actions to assume an IAM role without storing long-lived AWS keys.
-# The OIDC provider is created once per AWS account — safe to run multiple times.
-data "aws_iam_openid_connect_provider" "github" {
-  # Check if it already exists; if not, create with the resource below
-  url = "https://token.actions.githubusercontent.com"
-  # If this data source fails (provider doesn't exist yet), comment it out
-  # and use the resource block below instead.
+# Created as a resource because this is the first time deploying to this AWS account.
+# Safe to run multiple times — if it already exists, import it with:
+#   terraform import aws_iam_openid_connect_provider.github <provider-arn>
+resource "aws_iam_openid_connect_provider" "github" {
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
 }
-
-# Uncomment this block if the OIDC provider doesn't exist yet in your account
-# resource "aws_iam_openid_connect_provider" "github" {
-#   url             = "https://token.actions.githubusercontent.com"
-#   client_id_list  = ["sts.amazonaws.com"]
-#   thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
-# }
 
 # ─── IAM role assumed by GitHub Actions CI/CD ─────────────────────────────────
 resource "aws_iam_role" "github_actions_deploy" {
@@ -25,8 +19,7 @@ resource "aws_iam_role" "github_actions_deploy" {
       {
         Effect = "Allow"
         Principal = {
-          Federated = data.aws_iam_openid_connect_provider.github.arn
-          # If using resource block above: aws_iam_openid_connect_provider.github.arn
+          Federated = aws_iam_openid_connect_provider.github.arn
         }
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
