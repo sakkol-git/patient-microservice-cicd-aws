@@ -1,0 +1,58 @@
+# audit-service must be deployed before patient-service because
+# patient-service calls it on startup health checks.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-service
+  namespace: medlogix
+  labels:
+    app: audit-service
+    project: medlogix
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: audit-service
+  template:
+    metadata:
+      labels:
+        app: audit-service
+        project: medlogix
+    spec:
+      # Run as non-root to match our Dockerfile USER directive
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: audit-service
+          # ECR image URI — CI/CD substitutes AWS_ACCOUNT_ID and AWS_REGION at deploy time
+          image: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/medlogix/audit-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SERVER_PORT
+              value: "8082"
+            - name: SPRING_RABBITMQ_HOST
+              value: "rabbitmq"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8082
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            failureThreshold: 3

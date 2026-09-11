@@ -1,0 +1,102 @@
+version: "3.9"
+
+# ─── Local integration test network ───────────────────────────────────────────
+# patient-service reaches audit-service by Docker service name (DNS: audit-service)
+# Run: docker compose up --build
+# Test: curl -X POST http://localhost:8081/patients -H "Content-Type: application/json" -d '{"name":"Jane","diagnosis":"Flu"}'
+#       curl http://localhost:8082/logs
+
+networks:
+  medlogix:
+    driver: bridge
+
+services:
+
+  rabbitmq:
+    image: public.ecr.aws/docker/library/rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - medlogix
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  audit-service:
+    build:
+      context: ./audit-service
+      # Force linux/amd64 so the image matches EKS x86 nodes on Apple Silicon
+      args:
+        BUILDPLATFORM: linux/amd64
+    platform: linux/amd64
+    image: wizzard2026/audit-service:latest
+    container_name: audit-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+    networks:
+      - medlogix
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8082/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  patient-service:
+    build:
+      context: ./patient-service
+      args:
+        BUILDPLATFORM: linux/amd64
+    platform: linux/amd64
+    image: wizzard2026/patient-service:latest
+    container_name: patient-service
+    ports:
+      - "8081:8081"
+    environment:
+      # Overrides ${AUDIT_SERVICE_URL} in application.properties
+      # Docker DNS resolves "audit-service" to the container above
+      AUDIT_SERVICE_URL: http://audit-service:8082
+      SPRING_RABBITMQ_HOST: rabbitmq
+    networks:
+      - medlogix
+    depends_on:
+      audit-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      # Pass the backend API URLs that the frontend will use when running in the browser.
+      # By default, the browser will talk to the host machine's localhost where patient-service and audit-service are mapped.
+      args:
+        VITE_PATIENT_API: http://localhost:8081
+        VITE_AUDIT_API: http://localhost:8082
+    image: medlogix-frontend:local
+    container_name: frontend
+    ports:
+      - "3000:80"
+    networks:
+      - medlogix
+    depends_on:
+      patient-service:
+        condition: service_healthy
+      audit-service:
+        condition: service_healthy

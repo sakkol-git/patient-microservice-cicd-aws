@@ -1,0 +1,19 @@
+# ClusterIP — internal-only service.
+# patient-service calls audit-service using K8s DNS: http://audit-service.medlogix.svc.cluster.local:8082
+# or the short form http://audit-service:8082 (works within the same namespace)
+apiVersion: v1
+kind: Service
+metadata:
+  name: audit-service
+  namespace: medlogix
+  labels:
+    app: audit-service
+spec:
+  type: ClusterIP
+  selector:
+    app: audit-service
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8082
+      targetPort: 8082

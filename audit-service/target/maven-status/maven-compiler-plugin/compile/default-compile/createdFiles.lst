@@ -1,0 +1,6 @@
+com/example/auditservice/controller/AuditController.class
+com/example/auditservice/model/AuditLog.class
+com/example/auditservice/service/AuditLogService.class
+com/example/auditservice/AuditServiceApplication.class
+com/example/auditservice/config/RabbitConfig.class
+com/example/auditservice/listener/AuditMessageListener.class
