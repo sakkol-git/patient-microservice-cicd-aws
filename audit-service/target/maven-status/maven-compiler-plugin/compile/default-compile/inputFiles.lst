@@ -1,6 +1,0 @@
-/Users/apple/Documents/Patient-Microservice/audit-service/src/main/java/com/example/auditservice/AuditServiceApplication.java
-/Users/apple/Documents/Patient-Microservice/audit-service/src/main/java/com/example/auditservice/config/RabbitConfig.java
-/Users/apple/Documents/Patient-Microservice/audit-service/src/main/java/com/example/auditservice/controller/AuditController.java
-/Users/apple/Documents/Patient-Microservice/audit-service/src/main/java/com/example/auditservice/listener/AuditMessageListener.java
-/Users/apple/Documents/Patient-Microservice/audit-service/src/main/java/com/example/auditservice/model/AuditLog.java
-/Users/apple/Documents/Patient-Microservice/audit-service/src/main/java/com/example/auditservice/service/AuditLogService.java

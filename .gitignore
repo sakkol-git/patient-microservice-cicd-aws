@@ -1,0 +1,16 @@
+target/
+build/
+.gradle/
+*.class
+*.jar
+*.war
+.DS_Store
+.idea/
+*.iml
+.vscode/
+node_modules/
+dist/
+.env.local
+*.tfstate
+*.tfstate.*
+.terraform/

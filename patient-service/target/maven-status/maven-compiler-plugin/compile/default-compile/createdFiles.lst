@@ -1,5 +1,0 @@
-com/example/patientservice/config/RabbitConfig.class
-com/example/patientservice/model/Patient.class
-com/example/patientservice/controller/PatientController.class
-com/example/patientservice/service/AuditService.class
-com/example/patientservice/PatientServiceApplication.class
