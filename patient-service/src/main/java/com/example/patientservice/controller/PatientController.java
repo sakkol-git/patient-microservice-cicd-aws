@@ -46,4 +46,30 @@ public class PatientController {
         }
         return ResponseEntity.ok(patient);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Patient> updatePatient(@PathVariable String id, @RequestBody Patient updated) {
+        Patient existing = patientStore.get(id);
+        if (existing == null) {
+            return ResponseEntity.notFound().build();
+        }
+        existing.setName(updated.getName());
+        existing.setDiagnosis(updated.getDiagnosis());
+        patientStore.put(id, existing);
+
+        auditService.logEvent("Updated patient: " + existing.getName() + " (ID: " + id + ")");
+        return ResponseEntity.ok(existing);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePatient(@PathVariable String id) {
+        Patient removed = patientStore.remove(id);
+        if (removed == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        auditService.logEvent("Deleted patient: " + removed.getName() + " (ID: " + id + ")");
+        return ResponseEntity.noContent().build();
+    }
 }
+
