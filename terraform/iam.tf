@@ -30,8 +30,11 @@ resource "aws_iam_role" "github_actions_deploy" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            # Scope trust to your repo (supports both refs/heads/main and environment deployments)
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_org}/${var.github_repo}:*"
+            # Scope trust to your repo (supports classic and new 2026 format with @org_id/@repo_id)
+            "token.actions.githubusercontent.com:sub" = [
+              "repo:${var.github_org}/${var.github_repo}:*",
+              "repo:${var.github_org}*/${var.github_repo}*:*"
+            ]
           }
         }
       }
